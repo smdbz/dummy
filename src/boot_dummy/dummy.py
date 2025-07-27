@@ -15,281 +15,203 @@ class GenerateData:
     datasets, and create new data that matches statistical properties of real data.
     """
 
-    def __init__(self, num_records: int = 1000) -> None:
-        """Initialize with the specified number of records.
-        
-        Args:
-            num_records: Number of records to generate (default: 1000)
-            
-        Raises:
-            ValueError: If num_records is not a positive integer
+    def __init__(self, seed_df: pd.DataFrame):
         """
-        if not isinstance(num_records, int) or num_records <= 0:
-            raise ValueError("num_records must be a positive integer")
-        self.num_records = num_records
+        Initialize the DataGenerator with a seed DataFrame.
 
-    def generate(self) -> pd.DataFrame:
-        """Generate synthetic customer data using the instance's num_records.
-        
-        Returns:
-            DataFrame with Age, Income, CreditScore, and LoanAmount columns
+        Parameters
+        ----------
+        seed_df : pd.DataFrame
+            The seed DataFrame to analyze and base synthetic data generation on.
         """
-        return self.generate_customer_data(self.num_records)
+        self.seed_df = seed_df.copy()
+        self.columns = seed_df.columns
+        self.column_types = {}
+        self.column_stats = {}
+        self._analyze_columns()
 
-    @staticmethod
-    def generate_customer_data(num_records: int) -> pd.DataFrame:
-        """Generate synthetic customer data with predefined rules.
-        
-        Creates data with Age, Income, CreditScore, and LoanAmount columns.
-        
-        Args:
-            num_records: Number of customer records to generate
-            
-        Returns:
-            DataFrame containing synthetic customer data
+    def _analyze_columns(self) -> None:
         """
-        data = []
-        for _ in range(num_records):
-            age = np.random.randint(18, 80)
-
-            # Rule: Income is loosely based on age
-            base_income = 20000 + (age - 18) * 1000
-            income = np.random.normal(base_income, base_income * 0.2)
-
-            # Rule: Credit score is influenced by age and income
-            credit_score = min(850, max(300, int(600 + (age / 80) * 100 + (income / 100000) * 100 + np.random.normal(0,
-                                                                                                                     50))))
-
-            # Rule: Loan amount is based on income and credit score
-            max_loan = income * (credit_score / 600)
-            loan_amount = np.random.uniform(0, max_loan)
-
-            data.append([age, income, credit_score, loan_amount])
-
-        return pd.DataFrame(data, columns=['Age', 'Income', 'CreditScore', 'LoanAmount'])
-
-    @staticmethod
-    def enhanced_describe(df: pd.DataFrame) -> pd.DataFrame:
-        """Generate enhanced descriptive statistics for a DataFrame.
-        
-        Extends pandas' describe() with additional statistics like skewness,
-        kurtosis, and percentiles for numeric columns, and value counts for
-        categorical columns.
-        
-        Args:
-            df: Input DataFrame to analyze
-            
-        Returns:
-            DataFrame containing detailed statistics for each column
-            
-        Raises:
-            ValueError: If input is not a pandas DataFrame or is empty
+        Analyze each column in the seed DataFrame to determine its type and statistics.
         """
-        if not isinstance(df, pd.DataFrame):
-            raise ValueError("Input must be a pandas DataFrame")
-            
-        if df.empty:
-            raise ValueError("Input DataFrame is empty")
-        stats = {}
-
-        for column in df.columns:
-            if pd.api.types.is_numeric_dtype(df[column]):
-                # Get basic statistics and add additional ones
-                basic_stats = df[column].describe(percentiles=[0.01, 0.05, 0.25, 0.5, 0.75, 0.95, 0.99]).to_dict()
-                
-                # Add more advanced statistics
-                stats[column] = {
-                    **basic_stats,
-                    'skewness': df[column].skew(),
-                    'kurtosis': df[column].kurtosis(),
-                    'missing_values': df[column].isnull().sum(),
-                    'missing_percent': (df[column].isnull().sum() / len(df)) * 100,
-                    'unique_values': df[column].nunique(),
-                    'mode': df[column].mode().iloc[0] if not df[column].mode().empty else None,
-                    'variance': df[column].var()
-                }
-            else:
-                # For non-numeric columns
-                stats[column] = {
-                    'count': df[column].count(),
-                    'unique_values': df[column].nunique(),
-                    'missing_values': df[column].isnull().sum(),
-                    'missing_percent': (df[column].isnull().sum() / len(df)) * 100,
-                    'mode': df[column].mode().iloc[0] if not df[column].mode().empty else None,
-                    'value_counts': df[column].value_counts().head().to_dict()
-                }
-
-        return pd.DataFrame(stats)
-        
-    @staticmethod
-    def generate_from_stats(stats_df: pd.DataFrame, num_records: int = 1000) -> pd.DataFrame:
-        """Generate synthetic data based on statistics from enhanced_describe.
-        
-        Creates data that matches statistical properties of an original dataset.
-        Handles both numeric and categorical columns, preserving distributions.
-        
-        Args:
-            stats_df: Statistics DataFrame from enhanced_describe()
-            num_records: Number of records to generate (default: 1000)
-            
-        Returns:
-            Synthetic data matching the statistical properties of the original data
-            
-        Raises:
-            ValueError: If stats_df is not a pandas DataFrame
-            ValueError: If num_records is not a positive integer
-        """
-        if not isinstance(stats_df, pd.DataFrame):
-            raise ValueError("stats_df must be a pandas DataFrame")
-        
-        if not isinstance(num_records, int) or num_records <= 0:
-            raise ValueError("num_records must be a positive integer")
-            
-        # Initialize empty DataFrame to store generated data
-        synthetic_data = pd.DataFrame(index=range(num_records))
-        
-        # Generate data for each column based on its statistics
-        for column in stats_df.columns:
-            col_stats = stats_df[column]
-            
-            # Check if this is a numeric column (has 'mean' and 'std' statistics)
-            if 'mean' in col_stats and 'std' in col_stats:
-                # Generate numeric data
-                if col_stats['std'] > 0:
-                    # Use normal distribution with truncation for most numeric columns
-                    data = np.random.normal(
-                        loc=col_stats['mean'],
-                        scale=col_stats['std'],
-                        size=num_records
-                    )
-                    
-                    # Truncate to min/max if available
-                    if 'min' in col_stats and 'max' in col_stats:
-                        data = np.clip(data, col_stats['min'], col_stats['max'])
-                    
-                    # If skewness is significant, adjust the distribution
-                    if 'skewness' in col_stats and abs(col_stats['skewness']) > 1:
-                        # For positive skew, use lognormal-like adjustment
-                        if col_stats['skewness'] > 1:
-                            # Shift data to be positive
-                            min_val = data.min()
-                            if min_val < 0:
-                                data = data - min_val + 1
-                            
-                            # Apply power transformation based on skewness
-                            skew_factor = min(col_stats['skewness'] / 2, 3)  # Limit the factor
-                            data = np.power(data, skew_factor)
-                            
-                            # Rescale to match original mean and std
-                            data = (data - data.mean()) / data.std() * col_stats['std'] + col_stats['mean']
-                            
-                            # Clip to original bounds
-                            if 'min' in col_stats and 'max' in col_stats:
-                                data = np.clip(data, col_stats['min'], col_stats['max'])
+        for col in self.columns:
+            # Determine column type
+            if pd.api.types.is_numeric_dtype(self.seed_df[col]):
+                if self.seed_df[col].dtype == 'int64' or self.seed_df[col].dtype == 'int32':
+                    self.column_types[col] = 'integer'
                 else:
-                    # If std is 0, use constant value
-                    data = np.full(num_records, col_stats['mean'])
-                
-                synthetic_data[column] = data
-                
-                # If the original data was integer type (based on column name or other heuristics)
-                if column in ['Age', 'CreditScore'] or ('unique_values' in col_stats and col_stats['unique_values'] < 100):
-                    synthetic_data[column] = synthetic_data[column].round().astype(int)
-            
-            # Handle categorical columns (those with value_counts)
-            elif 'value_counts' in col_stats and col_stats['value_counts']:
-                categories = list(col_stats['value_counts'].keys())
-                probabilities = list(col_stats['value_counts'].values())
-                # Normalize probabilities
-                probabilities = [p / sum(probabilities) for p in probabilities]
-                
-                # Generate categorical data
-                synthetic_data[column] = np.random.choice(
-                    categories,
-                    size=num_records,
-                    p=probabilities
-                )
-        
-        return synthetic_data
-        
-    @staticmethod
-    def load_dataset(file_path: str, **kwargs) -> pd.DataFrame:
-        """Load a dataset from a file (CSV, Excel, JSON, Parquet).
-        
-        Automatically detects file format based on extension.
-        
-        Args:
-            file_path: Path to the dataset file
-            **kwargs: Additional arguments for the pandas read function
-            
-        Returns:
-            Loaded dataset as a pandas DataFrame
-            
-        Raises:
-            ValueError: If the file format is unsupported or file doesn't exist
+                    self.column_types[col] = 'float'
+
+                # Calculate statistics for numeric columns
+                self.column_stats[col] = {
+                    'mean': self.seed_df[col].mean(),
+                    'std': self.seed_df[col].std(),
+                    'min': self.seed_df[col].min(),
+                    'max': self.seed_df[col].max(),
+                    'unique_values': self.seed_df[col].unique().tolist() if len(
+                        self.seed_df[col].unique()) < 10 else None
+                }
+
+            elif pd.api.types.is_datetime64_dtype(self.seed_df[col]):
+                self.column_types[col] = 'datetime'
+                # Calculate statistics for datetime columns
+                self.column_stats[col] = {
+                    'min': self.seed_df[col].min(),
+                    'max': self.seed_df[col].max(),
+                    'unique_values': self.seed_df[col].unique().tolist() if len(
+                        self.seed_df[col].unique()) < 10 else None
+                }
+
+            elif pd.api.types.is_categorical_dtype(self.seed_df[col]) or self.seed_df[col].nunique() / len(
+                    self.seed_df) < 0.1:
+                self.column_types[col] = 'categorical'
+                # Calculate statistics for categorical columns
+                value_counts = self.seed_df[col].value_counts(normalize=True)
+                self.column_stats[col] = {
+                    'categories': value_counts.index.tolist(),
+                    'probabilities': value_counts.values.tolist()
+                }
+
+            else:
+                self.column_types[col] = 'text'
+                # Calculate statistics for text columns
+                self.column_stats[col] = {
+                    'unique_values': self.seed_df[col].unique().tolist(),
+                    'length_mean': self.seed_df[col].str.len().mean(),
+                    'length_std': self.seed_df[col].str.len().std()
+                }
+
+    def _generate_numeric_value(self, col: str) -> Union[int, float]:
         """
-        if not os.path.exists(file_path):
-            raise ValueError(f"File not found: {file_path}")
-            
-        file_ext = os.path.splitext(file_path)[1].lower()
-        
-        if file_ext == '.csv':
-            return pd.read_csv(file_path, **kwargs)
-        elif file_ext in ['.xls', '.xlsx']:
-            return pd.read_excel(file_path, **kwargs)
-        elif file_ext == '.json':
-            return pd.read_json(file_path, **kwargs)
-        elif file_ext == '.parquet':
-            return pd.read_parquet(file_path, **kwargs)
-        else:
-            raise ValueError(f"Unsupported file format: {file_ext}")
-    
-    @classmethod
-    def generate_from_dataset(cls, 
-                             dataset_path: Optional[str] = None, 
-                             dataset: Optional[pd.DataFrame] = None,
-                             num_records: int = 1000,
-                             **kwargs) -> Dict[str, Any]:
-        """Complete workflow to load a dataset, analyze it, and generate synthetic data.
-        
-        Combines loading data, generating statistics, and creating synthetic data
-        in a single operation.
-        
-        Args:
-            dataset_path: Path to the dataset file (optional)
-            dataset: Dataset as DataFrame (optional, alternative to dataset_path)
-            num_records: Number of synthetic records to generate (default: 1000)
-            **kwargs: Additional arguments for load_dataset method
-            
-        Returns:
-            Dictionary with keys:
-                - 'original_data': The original dataset
-                - 'stats': The statistics from enhanced_describe
-                - 'synthetic_data': The generated synthetic data
-                
-        Raises:
-            ValueError: If neither dataset_path nor dataset is provided
-            ValueError: If dataset is provided but is not a pandas DataFrame
+        Generate a synthetic numeric value based on the column's statistics.
+
+        Parameters
+        ----------
+        col : str
+            The column name to generate a value for.
+
+        Returns
+        -------
+        Union[int, float]
+            A synthetic numeric value.
         """
-        # Load the dataset
-        if dataset is not None:
-            if not isinstance(dataset, pd.DataFrame):
-                raise ValueError("dataset must be a pandas DataFrame")
-            data = dataset
-        elif dataset_path is not None:
-            data = cls.load_dataset(dataset_path, **kwargs)
-        else:
-            raise ValueError("Either dataset_path or dataset must be provided")
-            
-        # Generate statistics
-        stats = cls.enhanced_describe(data)
-        
-        # Generate synthetic data
-        synthetic_data = cls.generate_from_stats(stats, num_records)
-        
-        # Return all components
-        return {
-            'original_data': data,
-            'stats': stats,
-            'synthetic_data': synthetic_data
-        }
+        stats = self.column_stats[col]
+
+        # If we have a small set of unique values, sample from them
+        if stats['unique_values'] is not None:
+            return np.random.choice(stats['unique_values'])
+
+        # Otherwise generate from a normal distribution with the same mean and std
+        value = np.random.normal(stats['mean'], stats['std'])
+
+        # Clip to min/max range
+        value = max(stats['min'], min(stats['max'], value))
+
+        # Convert to int if the column type is integer
+        if self.column_types[col] == 'integer':
+            value = int(round(value))
+
+        return value
+
+    def _generate_datetime_value(self, col: str) -> pd.Timestamp:
+        """
+        Generate a synthetic datetime value based on the column's statistics.
+
+        Parameters
+        ----------
+        col : str
+            The column name to generate a value for.
+
+        Returns
+        -------
+        pd.Timestamp
+            A synthetic datetime value.
+        """
+        stats = self.column_stats[col]
+
+        # If we have a small set of unique values, sample from them
+        if stats['unique_values'] is not None:
+            return np.random.choice(stats['unique_values'])
+
+        # Otherwise generate a random datetime between min and max
+        min_ts = stats['min'].timestamp()
+        max_ts = stats['max'].timestamp()
+        random_ts = np.random.uniform(min_ts, max_ts)
+
+        return pd.Timestamp.fromtimestamp(random_ts)
+
+    def _generate_categorical_value(self, col: str) -> Any:
+        """
+        Generate a synthetic categorical value based on the column's statistics.
+
+        Parameters
+        ----------
+        col : str
+            The column name to generate a value for.
+
+        Returns
+        -------
+        Any
+            A synthetic categorical value.
+        """
+        stats = self.column_stats[col]
+        return np.random.choice(stats['categories'], p=stats['probabilities'])
+
+    def _generate_text_value(self, col: str) -> str:
+        """
+        Generate a synthetic text value based on the column's statistics.
+
+        Parameters
+        ----------
+        col : str
+            The column name to generate a value for.
+
+        Returns
+        -------
+        str
+            A synthetic text value.
+        """
+        stats = self.column_stats[col]
+
+        # Sample from unique values
+        return np.random.choice(stats['unique_values'])
+
+    def generate_row(self) -> Dict[str, Any]:
+        """
+        Generate a single synthetic row based on the seed DataFrame.
+
+        Returns
+        -------
+        Dict[str, Any]
+            A dictionary representing a synthetic row.
+        """
+        row = {}
+
+        for col in self.columns:
+            if self.column_types[col] == 'integer' or self.column_types[col] == 'float':
+                row[col] = self._generate_numeric_value(col)
+            elif self.column_types[col] == 'datetime':
+                row[col] = self._generate_datetime_value(col)
+            elif self.column_types[col] == 'categorical':
+                row[col] = self._generate_categorical_value(col)
+            elif self.column_types[col] == 'text':
+                row[col] = self._generate_text_value(col)
+
+        return row
+
+    def generate_dataframe(self, n_rows: int) -> pd.DataFrame:
+        """
+        Generate a DataFrame with n_rows of synthetic data.
+
+        Parameters
+        ----------
+        n_rows : int
+            The number of synthetic rows to generate.
+
+        Returns
+        -------
+        pd.DataFrame
+            A DataFrame containing synthetic data.
+        """
+        rows = [self.generate_row() for _ in range(n_rows)]
+        return pd.DataFrame(rows)
