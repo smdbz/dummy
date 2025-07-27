@@ -22,6 +22,12 @@ class GenerateData:
 
     @staticmethod
     def generate_customer_data(num_records):
+        """
+        MVP, just make a dataset.
+        Code stolen from https://www.datacamp.com/tutorial/synthetic-data-generation
+        :param num_records:
+        :return:
+        """
         data = []
         for _ in range(num_records):
             age = np.random.randint(18, 80)
