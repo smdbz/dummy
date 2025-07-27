@@ -1,5 +1,5 @@
 [project]
-name = "dummy"
+name = "boot_dummy"
 version = "0.1.0"
 description = "A package to create dummmy data."
 requires-python = ">=3.13"
