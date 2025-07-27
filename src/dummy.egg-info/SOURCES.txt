@@ -1,0 +1,9 @@
+pyproject.toml
+src/dummy/__init__.py
+src/dummy/__main__.py
+src/dummy/dummy.py
+src/dummy.egg-info/PKG-INFO
+src/dummy.egg-info/SOURCES.txt
+src/dummy.egg-info/dependency_links.txt
+src/dummy.egg-info/requires.txt
+src/dummy.egg-info/top_level.txt

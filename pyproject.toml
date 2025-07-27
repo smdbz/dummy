@@ -1,6 +1,15 @@
 [project]
 name = "dummy"
 version = "0.1.0"
-description = "Add your description here"
+description = "A package to create dummmy data."
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "pandas>=2.3.1",
+    "pandas-stubs==2.3.0.250703",
+    "numpy>=1.24.0"
+
+]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
