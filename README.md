@@ -2,7 +2,7 @@
 
 A Python package for generating synthetic data with realistic statistical properties.
 
-See it in action: [Google colab notebook](https://colab.research.google.com/drive/1Td8_GPN0ses6Ts99rHyqgdPqcro0CnIx?usp=sharing)
+**See it in action**: [Google colab notebook](https://colab.research.google.com/drive/1Td8_GPN0ses6Ts99rHyqgdPqcro0CnIx?usp=sharing)
 
 This package was created for the 2025 [Boot.dev](https://www.boot.dev/) hackathon, the first hackathon I've participated in :D
 ## Installation
