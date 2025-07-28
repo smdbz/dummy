@@ -1,6 +1,6 @@
 [project]
 name = "boot_dummy"
-version = "0.3.0"
+version = "0.3.1"
 description = "A Python package to create synthetic data with realistic statistical properties."
 authors = [
     {name = "Zak Remsik"}

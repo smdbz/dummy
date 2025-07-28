@@ -4,8 +4,7 @@ Generate synthetic data with realistic statistical properties
 
 import numpy as np
 import pandas as pd
-import os
-from typing import Dict, Any, Optional
+import Dict, Union, Optional, Any
 
 class GenerateData:
     """
