@@ -61,7 +61,7 @@ You could then make predictions on the data and evaluate your model against know
 
 The dummy data that it outputs kinda sucks. That said, I’m super happy with the package design. The elements are modular and can be improved. The first version of the codebase was a bit smelly, and I’m glad I’ve learnt enough to recognise this.
 
-In conclusion, this is the closest thing I’ve made to real software so I love it.
+In conclusion, I’ve never made a python package before, and this is the closest thing I’ve made to real software so I love it.
 
 ## Resources
 - https://realpython.com/lessons/configure-python-package/
