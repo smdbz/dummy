@@ -2,6 +2,9 @@
 
 A Python package for generating synthetic data with realistic statistical properties.
 
+See it in action: [Google colab notebook](https://colab.research.google.com/drive/1Td8_GPN0ses6Ts99rHyqgdPqcro0CnIx?usp=sharing)
+
+This package was created for the 2025 [Boot.dev](https://www.boot.dev/) hackathon and is the first hackathon I've participated in :D
 ## Installation
 
 ```bash
@@ -52,12 +55,15 @@ The package analyzes your original dataset to determine:
 
 It then generates new data that preserves these properties while creating entirely synthetic records.
 
-## Requirements
+## Does it suck?
+When I first started the hackathon, I wanted to create a sort of "reverse data science" package, starting with data definitions and model weights to generate data.
+You could then make predictions on the data and evaluate your model against known input parameters. What it turned into was "can I make any package that can make any dummy data?"
 
-- Python ≥ 3.8
-- pandas ≥ 1.3.0
-- numpy ≥ 1.20.0
+The dummy data that it outputs kinda sucks. That said, I’m super happy with the package design. The elements are modular and can be improved. The first version of the codebase was a bit smelly, and I’m glad I’ve learnt enough to recognise this.
 
-## License
+In conclusion, this is the closest thing I’ve made to real software so I love it.
 
-MIT
+## Resources
+- https://realpython.com/lessons/configure-python-package/
+- https://www.datacamp.com/tutorial/synthetic-data-generation
+- https://www.kaggle.com/learn
